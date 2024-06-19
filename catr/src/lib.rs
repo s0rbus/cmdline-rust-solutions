@@ -26,14 +26,16 @@ pub fn get_args() -> MyResult<Config> {
                 .default_value("-"),
         )
         .arg(
-            Arg::with_name("number_lines")
+            Arg::with_name("number")
+                .long("number")
                 .short("n")
                 .help("number lines")
                 .takes_value(false)
                 .conflicts_with("number_non-blank_lines"),
         )
         .arg(
-            Arg::with_name("number_non-blank_lines")
+            Arg::with_name("number-nonblank")
+                .long("number-nonblank")
                 .short("b")
                 .help("number non-blank lines")
                 .takes_value(false),
@@ -42,8 +44,8 @@ pub fn get_args() -> MyResult<Config> {
 
     Ok(Config {
         files: matches.values_of_lossy("files").unwrap(),
-        number_lines: matches.is_present("number_lines"),
-        number_nonblank_lines: matches.is_present("number_non-blank_lines"),
+        number_lines: matches.is_present("number"),
+        number_nonblank_lines: matches.is_present("number-nonblank"),
     })
 }
 
@@ -64,7 +66,7 @@ pub fn run(config: Config) -> MyResult<()> {
         match open(&filename) {
             Err(err) => eprintln!("Failed to open {}: {}", filename, err),
             Ok(f) => {
-                println!("Opened {}", filename);
+                //println!("Opened {}", filename);
                 let lines_iter = f.lines().map(|l| l.unwrap());
                 let mut linenum = 1;
                 for line in lines_iter {
@@ -73,7 +75,7 @@ pub fn run(config: Config) -> MyResult<()> {
                             println!();
                             continue;
                         }
-                        print!("{}\t", linenum);
+                        print!("     {}\t", linenum);
                         linenum += 1;
                     }
                     println!("{}", line);
