@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 
-use clap::{App, Arg};
+use clap::{Arg, ArgAction, Command};
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
@@ -14,38 +14,43 @@ pub struct Config {
 }
 
 pub fn get_args() -> MyResult<Config> {
-    let matches = App::new("catr")
+    let matches = Command::new("catr")
         .version("0.1.0")
         .author("Rowan Limb")
         .about("Rust cat")
         .arg(
-            Arg::with_name("files")
+            Arg::new("files")
                 .value_name("FILES")
+                .action(ArgAction::Append)
                 .help("files to display")
-                .multiple(true)
                 .default_value("-"),
         )
         .arg(
-            Arg::with_name("number")
+            Arg::new("number")
                 .long("number")
-                .short("n")
+                .short('n')
                 .help("number lines")
-                .takes_value(false)
-                .conflicts_with("number_non-blank_lines"),
+                .action(ArgAction::SetTrue)
+                .conflicts_with("number-nonblank"),
         )
         .arg(
-            Arg::with_name("number-nonblank")
+            Arg::new("number-nonblank")
                 .long("number-nonblank")
-                .short("b")
-                .help("number non-blank lines")
-                .takes_value(false),
+                .short('b')
+                .action(ArgAction::SetTrue)
+                .help("number non-blank lines"),
         )
         .get_matches();
 
+    let fff: Vec<&str> = matches
+        .get_many("files")
+        .unwrap()
+        .map(String::as_str)
+        .collect();
     Ok(Config {
-        files: matches.values_of_lossy("files").unwrap(),
-        number_lines: matches.is_present("number"),
-        number_nonblank_lines: matches.is_present("number-nonblank"),
+        files: fff.iter().map(|s| s.to_string()).collect(),
+        number_lines: matches.get_flag("number"),
+        number_nonblank_lines: matches.get_flag("number-nonblank"),
     })
 }
 
