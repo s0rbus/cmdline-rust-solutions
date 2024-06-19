@@ -1,4 +1,6 @@
 use std::error::Error;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
 
 use clap::{App, Arg};
 
@@ -43,26 +45,41 @@ pub fn get_args() -> MyResult<Config> {
         number_lines: matches.is_present("number_lines"),
         number_nonblank_lines: matches.is_present("number_non-blank_lines"),
     })
+}
 
-    /*  if let Some(f) = matches.values_of_lossy("files") {
-        let c = Config {
-            files: f,
-            number_lines: matches.is_present("number_lines"),
-            number_nonblank_lines: matches.is_present("number_non-blank_lines"),
-        };
-        Ok(c)
-    } else {
-        let e: Box<dyn Error> = String::from("no files given").into();
-        Err(e)
-    } */
+fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
+    match filename {
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
+    }
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(config.clone());
     //had to explicitly read the struct fields otherwide got a compiler warning about fields never read even with dbg macro)
     //in turn, had to clone for dbg macro which meant deriving Clone
-    println!("Files: {}", config.files.join(","));
-    println!("NumLines: {}", config.number_lines);
-    println!("NumBlankLines: {}", config.number_nonblank_lines);
+    //println!("Files: {}", config.files.join(","));
+    //println!("NumLines: {}", config.number_lines);
+    //println!("NumBlankLines: {}", config.number_nonblank_lines);
+    for filename in config.files {
+        match open(&filename) {
+            Err(err) => eprintln!("Failed to open {}: {}", filename, err),
+            Ok(f) => {
+                println!("Opened {}", filename);
+                let lines_iter = f.lines().map(|l| l.unwrap());
+                let mut linenum = 1;
+                for line in lines_iter {
+                    if config.number_lines || config.number_nonblank_lines {
+                        if config.number_nonblank_lines && line.is_empty() {
+                            println!();
+                            continue;
+                        }
+                        print!("{}\t", linenum);
+                        linenum += 1;
+                    }
+                    println!("{}", line);
+                }
+            }
+        }
+    }
     Ok(())
 }
