@@ -39,10 +39,32 @@ fn main() {
 }
 
 fn run(args: Args) -> Result<()> {
-    for filename in args.files {
-        match open(&filename) {
+    let numfiles = args.files.len();
+    for (pos, filename) in args.files.iter().enumerate() {
+        match open(filename) {
             Err(err) => eprintln!("{filename}: {err}"),
-            Ok(_) => println!("opened {filename}"),
+            Ok(file) => {
+                //'head'-style header if multiple files
+                if numfiles > 1 {
+                    if pos > 0 {
+                        println!();
+                    }
+                    println!("==> {filename} <==");
+                }
+                for (line_num, line) in file.lines().enumerate() {
+                    match line {
+                        Err(err) => {
+                            eprintln!("{filename}: {err}");
+                            break;
+                        }
+                        Ok(l) => println!("{l}"),
+                    }
+
+                    if line_num + 1 >= args.lines.try_into().unwrap() {
+                        break;
+                    }
+                }
+            }
         }
     }
     Ok(())
