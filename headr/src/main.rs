@@ -44,7 +44,7 @@ fn run(args: Args) -> Result<()> {
     for (pos, filename) in args.files.iter().enumerate() {
         match open(filename) {
             Err(err) => eprintln!("{filename}: {err}"),
-            Ok(mut file) => {
+            Ok(file) => {
                 //'head'-style header if multiple files
                 if numfiles > 1 {
                     if pos > 0 {
@@ -53,9 +53,17 @@ fn run(args: Args) -> Result<()> {
                     println!("==> {filename} <==");
                 }
                 if numbytes > 0 {
-                    let mut buffer = vec![0; numbytes as usize];
-                    let bytes_read = file.read(&mut buffer)?;
-                    print!("{}", String::from_utf8_lossy(&buffer[..bytes_read]));
+                    //let mut buffer = vec![0; numbytes as usize];
+                    //let bytes_read = file.read(&mut buffer)?;
+                    let bytes_read = file
+                        .bytes()
+                        .take(numbytes as usize)
+                        .collect::<Result<Vec<_>, _>>();
+                    match bytes_read {
+                        Err(err) => eprintln!("reading bytes: {}", err),
+                        Ok(b) => print!("{}", String::from_utf8_lossy(&b[..])),
+                    }
+                    //print!("{}", String::from_utf8_lossy(&buffer[..bytes_read]));
                 } else {
                     for (line_num, line) in file.lines().enumerate() {
                         match line {
