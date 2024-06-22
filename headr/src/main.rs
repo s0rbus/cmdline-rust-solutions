@@ -44,7 +44,7 @@ fn run(args: Args) -> Result<()> {
     for (pos, filename) in args.files.iter().enumerate() {
         match open(filename) {
             Err(err) => eprintln!("{filename}: {err}"),
-            Ok(file) => {
+            Ok(mut file) => {
                 //'head'-style header if multiple files
                 if numfiles > 1 {
                     if pos > 0 {
@@ -65,7 +65,18 @@ fn run(args: Args) -> Result<()> {
                     }
                     //print!("{}", String::from_utf8_lossy(&buffer[..bytes_read]));
                 } else {
-                    for (line_num, line) in file.lines().enumerate() {
+                    //this version will include CR which is deliberately in the three.txt file
+                    //see book pp 84,85
+                    let mut line = String::new();
+                    for _ in 0..args.lines {
+                        let bytes = file.read_line(&mut line)?;
+                        if bytes == 0 {
+                            break;
+                        }
+                        print!("{line}");
+                        line.clear();
+                    }
+                    /* for (line_num, line) in file.lines().enumerate() {
                         match line {
                             Err(err) => {
                                 eprintln!("{filename}: {err}");
@@ -77,7 +88,7 @@ fn run(args: Args) -> Result<()> {
                         if line_num + 1 >= args.lines.try_into().unwrap() {
                             break;
                         }
-                    }
+                    } */
                 }
             }
         }
